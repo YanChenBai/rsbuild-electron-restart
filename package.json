@@ -1,7 +1,8 @@
 {
-  "name": "@rsbuild/electron-auto-restart",
+  "name": "@byc/electron-auto-restart",
   "type": "module",
   "version": "0.0.1",
+  "private": false,
   "description": "",
   "author": "byc",
   "license": "ISC",
