@@ -8,15 +8,13 @@
   "license": "ISC",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "typesVersions": {
     "*": {
       ".": [
-        "./dist/index.d.ts",
-        "./dist/index.d.cts"
+        "./dist/index.d.ts"
       ]
     }
   },

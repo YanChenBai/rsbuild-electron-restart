@@ -9,7 +9,7 @@ export default defineConfig({
     index: 'src/index.ts',
   },
   external: ['@rsbuild/core'],
-  format: ['cjs', 'esm'],
+  format: ['esm'],
   sourcemap: isDev,
   minify: false,
   splitting: true,
