@@ -1,7 +1,7 @@
 {
   "name": "@byc/electron-auto-restart",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": false,
   "description": "",
   "author": "byc",
@@ -26,8 +26,7 @@
     "lint": "eslint --fix",
     "pkg:publish": "pnpm build & pnpm publish"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "@antfu/eslint-config": "^4.10.2",
     "@rsbuild/core": "^1.2.19",
