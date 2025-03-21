@@ -1,0 +1,44 @@
+{
+  "name": "@rsbuild/electron-restart",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "",
+  "author": "byc",
+  "license": "ISC",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/index.d.ts",
+        "./dist/index.d.cts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint --fix",
+    "pkg:publish": "pnpm build & pnpm publish"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.10.2",
+    "@rsbuild/core": "^1.2.19",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
