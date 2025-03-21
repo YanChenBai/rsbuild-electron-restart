@@ -1,5 +1,5 @@
 {
-  "name": "@rsbuild/electron-restart",
+  "name": "@rsbuild/electron-auto-restart",
   "type": "module",
   "version": "0.0.1",
   "description": "",
