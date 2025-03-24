@@ -1,19 +1,30 @@
 import type { RsbuildPlugin } from '@rsbuild/core'
 import { exec, spawn } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import path from 'node:path'
 import process from 'node:process'
+import { readPackage } from 'read-pkg'
+
+const PID_PATH = '.pid'
+const LOCK_FILE_NAME = {
+  npm: 'package-lock.json',
+  pnpm: 'pnpm-lock.yaml',
+  yarn: 'yarn.lock',
+}
 
 function detectPackageManager() {
   const path = process.env.npm_execpath
   if (path?.includes('yarn'))
     return 'yarn'
   if (path?.endsWith('\pnpm.cjs'))
-    return 'pnpm -w'
+    return 'pnpm'
   if (path?.endsWith('\npm-cli.js'))
     return 'npm'
-  return 'npm'
+
+  throw new Error('No package manager detected')
 }
+
+const packageManager = detectPackageManager()
 
 function isPidValid(pid: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -48,34 +59,49 @@ async function killProcessByPid(pid: number) {
   })
 }
 
-export default function (options: { script: string }): RsbuildPlugin {
-  const PID_PATH = resolve(__dirname, '.pid')
-  const { script } = options
-  function savePid(pid: number) {
-    const pidStr = `${pid}`
+function findRootPath() {
+  let currentPath = process.cwd()
+  const lockFile = LOCK_FILE_NAME[packageManager]
 
-    // 写入文件
-    writeFileSync(PID_PATH, pidStr)
+  while (currentPath !== '/') {
+    if (existsSync(`${currentPath}/${lockFile}`))
+      return currentPath
+
+    const parentDir = path.resolve(currentPath, '../')
+
+    if (parentDir === currentPath)
+      throw new Error(`No find ${lockFile}`)
+
+    currentPath = parentDir
   }
 
-  function getPid() {
-    if (!existsSync(PID_PATH))
-      return
-    const content = readFileSync(PID_PATH, 'utf-8')
-    return Number(content)
-  }
+  throw new Error(`No find ${lockFile}`)
+}
 
+function getPid() {
+  if (!existsSync(PID_PATH))
+    return
+  const content = readFileSync(PID_PATH, 'utf-8')
+  return Number(content)
+}
+
+let pid: number | undefined
+
+async function exit() {
+  if (!pid)
+    return
+
+  writeFileSync(PID_PATH, `${pid}`)
+  // 先结束之前的进程
+  await killProcessByPid(pid)
+}
+
+export default function (): RsbuildPlugin {
   return {
     name: 'electron-restart',
-    setup: (api) => {
+    setup: async (api) => {
       const rspack = api.getRsbuildConfig().tools?.rspack as { target: string }
-
-      const exit = async () => {
-        const pid = getPid()
-
-        // 先结束之前的进程
-        pid && (await killProcessByPid(pid))
-      }
+      pid = getPid()
 
       api.modifyRsbuildConfig(() => exit())
 
@@ -93,28 +119,37 @@ export default function (options: { script: string }): RsbuildPlugin {
         if (!isWatch)
           return
 
+        const rootPath = findRootPath()
+        const rootPackageJson = await readPackage({
+          cwd: rootPath,
+        })
+
+        if (!rootPackageJson.main)
+          throw new Error('No main field in package.json')
+
         // 启动新进程
         try {
+          const script = `electron ${rootPackageJson.main}`
           const currentProcess = spawn(
             packageManager,
-            ['run', script],
+            [script],
             {
-              cwd: process.cwd(),
+              cwd: rootPath,
               shell: true,
               stdio: 'inherit',
             },
           )
 
-          const pid = currentProcess.pid
-          if (pid)
-            savePid(pid)
+          pid = currentProcess.pid
         }
         catch (error) {
           console.error('Failed to start electron:', error)
         }
       })
 
-      api.onExit(() => exit())
+      api.onExit(() => {
+        exit()
+      })
     },
   }
 }

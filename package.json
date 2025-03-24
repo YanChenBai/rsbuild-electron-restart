@@ -1,16 +1,19 @@
 {
   "name": "@byc/electron-auto-restart",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
+  "packageManager": "pnpm@9.15.9",
   "description": "",
   "author": "byc",
   "license": "ISC",
   "exports": {
     ".": {
+      "dev": "./core/index.ts",
       "import": "./dist/index.js"
     }
   },
+  "main": "./out/main/index.cjs",
   "typesVersions": {
     "*": {
       ".": [
@@ -24,13 +27,17 @@
   "scripts": {
     "build": "tsup",
     "lint": "eslint --fix",
+    "dev": "pnpm --filter playground run dev",
     "pkg:publish": "pnpm build & pnpm publish"
   },
-  "dependencies": {},
+  "dependencies": {
+    "read-pkg": "^9.0.1"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^4.10.2",
     "@rsbuild/core": "^1.2.19",
     "@types/node": "^22.13.10",
+    "electron": "^35.0.3",
     "eslint": "^9.22.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.2"

@@ -6,7 +6,7 @@ const isDev = process.env.NODE_ENV === 'development'
 export default defineConfig({
   tsconfig: './tsconfig.json',
   entry: {
-    index: 'src/index.ts',
+    index: 'core/index.ts',
   },
   external: ['@rsbuild/core'],
   format: ['esm'],
@@ -15,4 +15,7 @@ export default defineConfig({
   splitting: true,
   clean: true,
   dts: true,
+  esbuildOptions(options) {
+    options.conditions = ['dev']
+  },
 })
