@@ -1,0 +1,9 @@
+{
+  "name": "playground-preload",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "rsbuild build -w",
+    "build": "rsbuild build",
+    "analyze": "rspack build --analyze"
+  }
+}

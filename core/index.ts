@@ -1,11 +1,12 @@
 import type { RsbuildPlugin } from '@rsbuild/core'
 import { exec, spawn } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { readPackage } from 'read-pkg'
+import lockfile from 'proper-lockfile'
+import { readPackageSync } from 'read-pkg'
 
-const PID_PATH = '.pid'
 const LOCK_FILE_NAME = {
   npm: 'package-lock.json',
   pnpm: 'pnpm-lock.yaml',
@@ -78,6 +79,9 @@ function findRootPath() {
   throw new Error(`No find ${lockFile}`)
 }
 
+const ROOT_PATH = findRootPath()
+const PID_PATH = path.resolve(ROOT_PATH, 'node_modules', '.pid')
+
 function getPid() {
   if (!existsSync(PID_PATH))
     return
@@ -85,70 +89,81 @@ function getPid() {
   return Number(content)
 }
 
-let pid: number | undefined
+async function savePid(pid: number) {
+  await writeFile(PID_PATH, `${pid}`)
+}
 
 async function exit() {
-  if (!pid)
-    return
-
-  writeFileSync(PID_PATH, `${pid}`)
+  const pid = getPid()
   // 先结束之前的进程
-  await killProcessByPid(pid)
+  pid && await killProcessByPid(pid)
 }
 
 export default function (): RsbuildPlugin {
   return {
     name: 'electron-restart',
     setup: async (api) => {
+      let release = async () => {}
       const rspack = api.getRsbuildConfig().tools?.rspack as { target: string }
-      pid = getPid()
-
-      api.modifyRsbuildConfig(() => exit())
 
       api.onBeforeBuild(async ({ isFirstCompile, isWatch }) => {
-        if (isFirstCompile && rspack.target !== 'electron-main')
+        const isLock = await lockfile.check(PID_PATH)
+        if (isLock)
           return
 
-        await exit()
-
-        const packageManager = detectPackageManager()
-
-        if (!packageManager)
-          throw new Error('No package manager detected')
-
-        if (!isWatch)
-          return
-
-        const rootPath = findRootPath()
-        const rootPackageJson = await readPackage({
-          cwd: rootPath,
-        })
-
-        if (!rootPackageJson.main)
-          throw new Error('No main field in package.json')
-
-        // 启动新进程
+        release = await lockfile.lock(PID_PATH)
         try {
-          const script = `electron ${rootPackageJson.main}`
-          const currentProcess = spawn(
-            packageManager,
-            [script],
-            {
-              cwd: rootPath,
-              shell: true,
-              stdio: 'inherit',
-            },
-          )
+          if (isFirstCompile && rspack.target !== 'electron-main')
+            return
 
-          pid = currentProcess.pid
+          await exit()
+
+          const packageManager = detectPackageManager()
+
+          if (!packageManager)
+            throw new Error('No package manager detected')
+
+          if (!isWatch)
+            return
+
+          const rootPackageJson = readPackageSync({
+            cwd: ROOT_PATH,
+          })
+
+          if (!rootPackageJson.main)
+            throw new Error('No main field in package.json')
+
+          // 启动新进程
+          try {
+            const script = `electron ${rootPackageJson.main}`
+            const currentProcess = spawn(
+              packageManager,
+              [script],
+              {
+                cwd: ROOT_PATH,
+                shell: true,
+                stdio: 'inherit',
+              },
+            )
+
+            currentProcess.pid && savePid(currentProcess.pid)
+          }
+          catch (error) {
+            console.error('Failed to start electron:', error)
+          }
         }
-        catch (error) {
-          console.error('Failed to start electron:', error)
+        finally {
+          release()
         }
+      })
+
+      api.onCloseBuild(async () => {
+        await release()
       })
 
       api.onExit(() => {
         exit()
+        release()
       })
     },
   }

@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig } from '@rsbuild/core'
-import AutoRestart from '../core'
+import AutoRestart from '../../core'
 
 export default defineConfig({
   root: resolve(__dirname, '.'),
@@ -16,7 +16,7 @@ export default defineConfig({
     target: 'node',
     minify: false,
     distPath: {
-      root: '../out/main',
+      root: '../../out/main',
     },
     cleanDistPath: true,
     filename: {

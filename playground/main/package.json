@@ -1,5 +1,5 @@
 {
-  "name": "playground",
+  "name": "playground-main",
   "version": "0.0.1",
   "scripts": {
     "dev": "rsbuild build -w"
