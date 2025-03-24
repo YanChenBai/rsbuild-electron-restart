@@ -1,6 +1,6 @@
 import type { RsbuildPlugin } from '@rsbuild/core'
 import { exec, spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -100,6 +100,15 @@ async function exit() {
 }
 
 export default function (): RsbuildPlugin {
+  // init .pid file
+  try {
+    if (!existsSync(PID_PATH))
+      writeFileSync(PID_PATH, '')
+  }
+  catch (error) {
+    console.error('Failed to create .pid file:', error)
+  }
+
   return {
     name: 'electron-restart',
     setup: async (api) => {
