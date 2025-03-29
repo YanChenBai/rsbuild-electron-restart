@@ -115,7 +115,10 @@ export default function (): RsbuildPlugin {
       let release = async () => {}
       const rspack = api.getRsbuildConfig().tools?.rspack as { target: string }
 
-      api.onBeforeBuild(async ({ isFirstCompile, isWatch }) => {
+      api.onAfterBuild(async ({ isFirstCompile, isWatch }) => {
+        if (!isWatch)
+          return
+
         const isLock = await lockfile.check(PID_PATH)
         if (isLock)
           return
@@ -131,9 +134,6 @@ export default function (): RsbuildPlugin {
 
           if (!packageManager)
             throw new Error('No package manager detected')
-
-          if (!isWatch)
-            return
 
           const rootPackageJson = readPackageSync({
             cwd: ROOT_PATH,

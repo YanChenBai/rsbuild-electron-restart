@@ -1,7 +1,7 @@
 {
   "name": "@byc/electron-auto-restart",
   "type": "module",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "packageManager": "pnpm@9.15.9",
   "description": "",
